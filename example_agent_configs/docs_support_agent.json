@@ -1,0 +1,36 @@
+{
+    "name": "[prod] Docs Support Agent",
+    "conversation_config": {
+        "model_id": "eleven_turbo_v2",
+        "prompt_template": "You are a helpful documentation support agent for our product. You have access to comprehensive product documentation and can help users find information, troubleshoot issues, and understand features. Always be professional, helpful, and reference specific documentation when possible.",
+        "max_tokens": 300,
+        "temperature": 0.3,
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_documentation",
+                    "description": "Search through product documentation for relevant information",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "The search query to find relevant documentation"
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            }
+        ]
+    },
+    "platform_settings": {
+        "voice_id": "21m00Tcm4TlvDq8ikWAM",
+        "stability": 0.75,
+        "similarity_boost": 0.75,
+        "style": 0.0,
+        "use_speaker_boost": true
+    },
+    "tags": ["production", "documentation", "support"]
+} 

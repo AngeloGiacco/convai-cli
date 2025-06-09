@@ -1,0 +1,17 @@
+{
+    "agents": [
+        {
+            "name": "[prod] Docs support agent",
+            "id": "q6EtujId97WBxLEUlEgQ",
+            "config": "agent_configs/docs_support_agent.json"
+        },
+        {
+            "name": "[dev] Customer service bot",
+            "config": "agent_configs/customer_service_dev.json"
+        },
+        {
+            "name": "[staging] Sales assistant",
+            "config": "agent_configs/sales_assistant_staging.json"
+        }
+    ]
+} 
