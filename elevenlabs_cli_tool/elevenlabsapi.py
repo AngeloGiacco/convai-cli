@@ -2,19 +2,7 @@ import os
 import typing
 from elevenlabs import ElevenLabs, ConversationalConfig
 from elevenlabs.types import AgentPlatformSettingsRequestModel
-
-# Try to import OMIT, use a fallback if not available
-try:
-    from elevenlabs.core import OMIT
-except ImportError:
-    try:
-        from elevenlabs import OMIT
-    except ImportError:
-        # Define OMIT as a sentinel object if not available
-        class OmitType:
-            def __repr__(self):
-                return "OMIT"
-        OMIT = OmitType()
+from elevenlabs.client import OMIT
 
 
 def get_elevenlabs_client() -> ElevenLabs:

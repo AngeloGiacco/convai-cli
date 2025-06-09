@@ -13,15 +13,13 @@ from elevenlabs.types import (
 )
 
 # Import functions to test and OMIT constant
-from elevenlabs_cli_tool.elevenlabs_api import (
+from elevenlabs_cli_tool.elevenlabsapi import (
     get_elevenlabs_client, 
     create_agent_api, 
     update_agent_api
 )
-# OMIT should be imported from where it's defined/re-exported in elevenlabs_api.py
-# If elevenlabs_api.py uses `from elevenlabs.core import OMIT`, then that's the source.
-# For tests, we can assume it's correctly handled by the module itself, or import it if needed for assertions.
-from elevenlabs.core import OMIT # Assuming this is the ultimate source of OMIT used in the app code
+# Import OMIT from our module (which handles the fallback)
+from elevenlabs_cli_tool.elevenlabsapi import OMIT
 
 
 @pytest.fixture
