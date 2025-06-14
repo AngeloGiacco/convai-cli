@@ -200,7 +200,12 @@ convai watch --interval 10 --env production
 View the current status of all agents:
 
 ```bash
+# Check status for default environment
 convai status
+
+# Check status for specific environment
+convai status --env production
+convai status --env development
 ```
 
 ### 7. List Agents
@@ -238,8 +243,12 @@ convai watch --interval 5
 # In another terminal, edit your agent configs
 # Changes will automatically sync to ElevenLabs!
 
-# Check status anytime
+# Check status anytime (for default environment)
 convai status
+
+# Check status for specific environments
+convai status --env development
+convai status --env production
 ```
 
 ### Working with Existing Agents
@@ -285,7 +294,7 @@ poetry run pytest
 | `convai fetch` | Import agents from ElevenLabs |
 | `convai validate <config>` | Validate configuration file |
 | `convai sync` | Synchronize agents with ElevenLabs |
-| `convai status` | Show agent status |
+| `convai status` | Show agent status (supports --env) |
 | `convai list-agents` | List configured agents |
 | `convai watch` | Monitor and auto-sync changes |
 
@@ -337,7 +346,8 @@ convai sync --env production             # Environment-specific
 
 ### Monitoring
 ```bash
-convai status                            # Show agent status
+convai status                            # Show agent status (default env)
+convai status --env production           # Show status for specific environment
 convai list-agents                       # List all agents
 convai watch                             # Auto-sync on changes
 ```
@@ -399,6 +409,10 @@ convai add "[prod] Bot" --template customer-service
 # Edit configs for each environment
 convai sync --env development
 convai sync --env production
+
+# Check status for each environment
+convai status --env development
+convai status --env production
 ```
 
 ### Continuous Development
@@ -448,7 +462,7 @@ convai status
 | `convai fetch` | Import agents from ElevenLabs |
 | `convai validate <config>` | Validate configuration |
 | `convai sync` | Synchronize agents |
-| `convai status` | Show agent status |
+| `convai status` | Show agent status (supports --env) |
 | `convai list-agents` | List configured agents |
 | `convai watch` | Monitor and auto-sync changes |
 

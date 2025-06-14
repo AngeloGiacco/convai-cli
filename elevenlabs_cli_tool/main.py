@@ -316,8 +316,10 @@ def sync(
 
 
 @app.command()
-def status():
-    """Show the status of all agents."""
+def status(
+    environment: str = typer.Option("default", "--env", help="Environment to check status for")
+):
+    """Show the status of all agents for a specific environment."""
     
     # Load agents configuration
     agents_config_path = Path(AGENTS_CONFIG_FILE)
@@ -332,7 +334,7 @@ def status():
         typer.echo("No agents configured")
         return
     
-    typer.echo("Agent Status:")
+    typer.echo(f"Agent Status (Environment: {environment}):")
     typer.echo("=" * 50)
     
     for agent_def in agents_config["agents"]:
@@ -351,15 +353,15 @@ def status():
                 config_hash = utils.calculate_config_hash(agent_config)
                 typer.echo(f"   Config Hash: {config_hash[:8]}...")
                 
-                # Check lock status for default environment
-                locked_agent = utils.get_agent_from_lock(lock_data, agent_name, "default")
+                # Check lock status for specified environment
+                locked_agent = utils.get_agent_from_lock(lock_data, agent_name, environment)
                 if locked_agent:
                     if locked_agent.get("hash") == config_hash:
-                        typer.echo("   Status: ✅ Synced")
+                        typer.echo(f"   Status: ✅ Synced ({environment})")
                     else:
-                        typer.echo("   Status: 🔄 Config changed (needs sync)")
+                        typer.echo(f"   Status: 🔄 Config changed (needs sync for {environment})")
                 else:
-                    typer.echo("   Status: 🆕 New (needs sync)")
+                    typer.echo(f"   Status: 🆕 New (needs sync for {environment})")
                     
             except Exception as e:
                 typer.echo(f"   Status: ❌ Config error: {e}")
