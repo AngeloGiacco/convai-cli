@@ -734,7 +734,18 @@ def list_agents():
     
     for i, agent_def in enumerate(agents_config["agents"], 1):
         typer.echo(f"{i}. {agent_def['name']}")
-        typer.echo(f"   Config: {agent_def['config']}")
+        
+        # Handle both old and new config structure
+        if "environments" in agent_def:
+            # New structure - show all environments
+            typer.echo("   Environments:")
+            for env_name, env_config in agent_def["environments"].items():
+                typer.echo(f"     {env_name}: {env_config['config']}")
+        else:
+            # Old structure - backward compatibility
+            config_path = agent_def.get("config", "No config path")
+            typer.echo(f"   Config: {config_path}")
+        
         typer.echo()
 
 
