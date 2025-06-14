@@ -883,5 +883,50 @@ def fetch(
         typer.echo(f"❌ Error fetching agents: {e}", err=True)
         raise typer.Exit(1)
 
+@app.command()
+def widget(
+    agent_name: str = typer.Argument(help="Name of the agent to generate widget for"),
+    environment: str = typer.Option("prod", "--env", help="Environment to get agent ID from")
+):
+    """Generate HTML widget snippet for an agent."""
+    
+    # Load agents configuration
+    agents_config_path = Path(AGENTS_CONFIG_FILE)
+    if not agents_config_path.exists():
+        typer.echo("❌ agents.json not found. Run 'convai init' first.", err=True)
+        raise typer.Exit(1)
+    
+    # Load lock file to get agent ID
+    lock_file_path = Path(LOCK_FILE)
+    lock_data = utils.load_lock_file(str(lock_file_path))
+    
+    # Check if agent exists in config
+    agents_config = utils.read_agent_config(str(agents_config_path))
+    agent_exists = any(agent["name"] == agent_name for agent in agents_config["agents"])
+    
+    if not agent_exists:
+        typer.echo(f"❌ Agent '{agent_name}' not found in configuration", err=True)
+        raise typer.Exit(1)
+    
+    # Get environment-specific agent data from lock file
+    locked_agent = utils.get_agent_from_lock(lock_data, agent_name, environment)
+    
+    if not locked_agent or not locked_agent.get("id"):
+        typer.echo(f"❌ Agent '{agent_name}' not found for environment '{environment}' or not yet synced", err=True)
+        typer.echo(f"💡 Run 'convai sync --agent {agent_name} --env {environment}' to create the agent first")
+        raise typer.Exit(1)
+    
+    agent_id = locked_agent["id"]
+    
+    # Generate HTML widget snippet
+    html_snippet = f'''<elevenlabs-convai agent-id="{agent_id}"></elevenlabs-convai>
+<script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>'''
+    
+    typer.echo(f"🎯 HTML Widget for '{agent_name}' (environment: {environment}):")
+    typer.echo("=" * 60)
+    typer.echo(html_snippet)
+    typer.echo("=" * 60)
+    typer.echo(f"Agent ID: {agent_id}")
+
 if __name__ == "__main__":
     app()
