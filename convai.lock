@@ -1,13 +1,13 @@
 {
     "agents": {
         "example_agent": {
-            "default": {
-                "id": "agent_01jxqvmhakfcv92c0e3x9byamy",
+            "prod": {
+                "id": "agent_01jxr1akkdegqsd44cfxryx08v",
                 "hash": "38dd7d9025202f22d2c584fe0d72d46e"
             },
-            "development": {
-                "id": "agent_01jxqvmhakfcv92c0e3x9byamy",
-                "hash": "e632093121435a673e09e48dd382cc7e"
+            "dev": {
+                "id": "agent_01jxr1b3y0f2ysmsc6y956qytn",
+                "hash": "38dd7d9025202f22d2c584fe0d72d46e"
             }
         }
     }

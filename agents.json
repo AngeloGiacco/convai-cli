@@ -2,8 +2,14 @@
     "agents": [
         {
             "name": "example_agent",
-            "id": "agent_01jxqvmhakfcv92c0e3x9byamy",
-            "config": "agent_configs/example_agent.json"
+            "environments": {
+                "prod": {
+                    "config": "agent_configs/prod/example_agent.json"
+                },
+                "dev": {
+                    "config": "agent_configs/dev/example_agent.json"
+                }
+            }
         }
     ]
 }
