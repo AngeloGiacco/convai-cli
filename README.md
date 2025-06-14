@@ -6,11 +6,11 @@ A powerful CLI tool to manage ElevenLabs Conversational AI agents using local co
 
 - **Complete Agent Configuration**: Full ElevenLabs agent schema support (ASR, TTS, platform settings, etc.)
 - **Template System**: Pre-built templates for common use cases
-- **Multi-environment Support**: Deploy across dev, staging, production
+- **Multi-environment Support**: Deploy across dev, staging, production with environment-specific configs
 - **Hash-based Updates**: Only sync when configuration actually changes
 - **Continuous Monitoring**: Watch mode for automatic updates
 - **Agent Import**: Fetch existing agents from ElevenLabs workspace
-- **Configuration Validation**: Built-in config validation
+- **Widget**: View HTML widget snippets for agents
 
 ## Installation
 
@@ -38,10 +38,9 @@ convai init
 convai add "Customer Support Bot" --template customer-service
 
 # 3. Edit configuration
-# agent_configs/customer_support_bot.json
+# Edit agent_configs/prod/customer_support_bot.json
 
-# 4. Validate and sync
-convai validate agent_configs/customer_support_bot.json
+# 4. Sync to ElevenLabs
 convai sync
 
 # 5. Watch for changes (optional)
@@ -56,34 +55,33 @@ The tool uses a flexible directory structure in your project:
 your_project_root/
 ├── agents.json              # Central agent configuration file
 ├── agent_configs/           # Agent configuration files
-│   ├── docs_support_agent.json
-│   ├── customer_service_dev.json
-│   └── sales_assistant_staging.json
-├── tests/                   # Test files for agents
-│   ├── test_docs_support.py
-│   ├── test_customer_service.py
-│   └── test_sales_assistant.py
+│   ├── prod/                # Production environment configs
+│   │   ├── customer_support_bot.json
+│   │   └── sales_assistant.json
+│   ├── dev/                 # Development environment configs
+│   │   └── test_bot.json
+│   └── staging/             # Staging environment configs
 ├── convai.lock              # Lock file to store agent IDs and config hashes
 └── pyproject.toml           # Project metadata and dependencies
 ```
 
-### Central Agent Configuration (agents.json)
+## Central Agent Configuration (agents.json)
 
-The `agents.json` file defines all your agents and their associated files:
+The `agents.json` file defines all your agents and their environment-specific configurations:
 
 ```json
 {
     "agents": [
         {
-            "name": "[prod] Docs support agent",
-            "id": "q6EtujId97WBxLEUlEgQ",
-            "config": "agent_configs/docs_support_agent.json",
-            "test_cases": "tests/test_docs_support.py"
-        },
-        {
-            "name": "[dev] Customer service bot",
-            "config": "agent_configs/customer_service_dev.json", 
-            "test_cases": "tests/test_customer_service.py"
+            "name": "Customer Support Bot",
+            "environments": {
+                "prod": {
+                    "config": "agent_configs/prod/customer_support_bot.json"
+                },
+                "dev": {
+                    "config": "agent_configs/dev/customer_support_bot.json"
+                }
+            }
         }
     ]
 }
@@ -101,7 +99,7 @@ convai init
 convai add "Customer Support Bot"
 
 # 3. Edit the generated config file to customize your agent
-# agent_configs/customer_support_bot.json
+# agent_configs/prod/customer_support_bot.json
 
 # 4. Sync changes to ElevenLabs
 convai sync
@@ -136,176 +134,33 @@ convai add "Docs support agent"
 ```
 
 This will:
-*   Create a config file at `agent_configs/docs_support_agent.json` with default settings
+*   Create a config file at `agent_configs/prod/docs_support_agent.json` with default settings
 *   Upload the agent to ElevenLabs and get an ID
 *   Add the agent to `agents.json` with the ID
 *   Update the lock file
 
-You can also specify a custom config path:
-```bash
-convai add "Customer service bot" --config-path "configs/custom_bot.json"
+# Create for specific environment
+convai add "Dev Bot" --env development
+
+# Create config only (don't upload to ElevenLabs yet)
+convai add "My Bot" --skip-upload
+
+# Custom config path
+convai add "Custom Bot" --config-path "custom/path/bot.json"
 ```
 
-### 3. Configure Your Agent
-
-Edit the generated config file (e.g., `agent_configs/docs_support_agent.json`):
-
-```json
-{
-    "name": "Docs support agent",
-    "conversation_config": {
-        "model_id": "eleven_turbo_v2",
-        "prompt_template": "You are a helpful documentation support agent...",
-        "max_tokens": 300,
-        "temperature": 0.3
-    },
-    "platform_settings": {
-        "voice_id": "21m00Tcm4TlvDq8ikWAM",
-        "stability": 0.75,
-        "similarity_boost": 0.75
-    },
-    "tags": ["support", "documentation"]
-}
-```
-
-### 4. Sync Changes
-
-After editing agent configs, sync the changes to ElevenLabs:
+### 3. Templates
 
 ```bash
-# Sync all agents
-convai sync
+# List available templates
+convai templates-list
 
-# Sync with dry run to see what would happen
-convai sync --dry-run
+# Show template configuration
+convai template-show customer-service
 
-# Sync for a specific environment
-convai sync --env production
+# Create agent with template
+convai add "Support Agent" --template customer-service
 ```
-
-### 5. Watch Mode for Continuous Updates
-
-Enable automatic syncing when config files change:
-
-```bash
-# Watch for changes and auto-sync
-convai watch
-
-# Watch with custom interval
-convai watch --interval 10 --env production
-```
-
-### 6. Check Agent Status
-
-View the current status of all agents:
-
-```bash
-# Check status for default environment
-convai status
-
-# Check status for specific environment
-convai status --env production
-convai status --env development
-```
-
-### 7. List Agents
-
-View all configured agents:
-
-```bash
-convai list-agents
-```
-
-## Common Workflows
-
-### Managing Multiple Environments
-
-```bash
-# Add agents for different environments
-convai add "[dev] Support Bot"
-convai add "[prod] Support Bot" 
-
-# Edit configs for different environments
-# agent_configs/dev_support_bot.json - relaxed settings for development
-# agent_configs/prod_support_bot.json - production-ready settings
-
-# Sync specific environments
-convai sync --env development
-convai sync --env production
-```
-
-### Continuous Development Workflow
-
-```bash
-# Start watching for changes
-convai watch --interval 5
-
-# In another terminal, edit your agent configs
-# Changes will automatically sync to ElevenLabs!
-
-# Check status anytime (for default environment)
-convai status
-
-# Check status for specific environments
-convai status --env development
-convai status --env production
-```
-
-### Working with Existing Agents
-
-If you already have agents in ElevenLabs, you can add them to your project:
-
-```bash
-# Initialize project
-convai init
-
-# Manually edit agents.json to add existing agents:
-{
-    "agents": [
-        {
-            "name": "My Existing Agent",
-            "id": "your-existing-agent-id",
-            "config": "agent_configs/existing_agent.json"
-        }
-    ]
-}
-
-# Create the config file with current settings
-# Then sync to ensure everything is in sync
-convai sync
-```
-
-## Development
-
-(Optional: Add notes for developers if this project were to be contributed to, e.g., how to run tests)
-
-```bash
-poetry run pytest
-```
-
-## Command Reference
-
-| Command | Description |
-|---------|-------------|
-| `convai init` | Initialize a new project |
-| `convai add <name>` | Create a new agent |
-| `convai templates-list` | List available templates |
-| `convai template-show <template>` | Show template configuration |
-| `convai fetch` | Import agents from ElevenLabs |
-| `convai validate <config>` | Validate configuration file |
-| `convai sync` | Synchronize agents with ElevenLabs |
-| `convai status` | Show agent status (supports --env) |
-| `convai list-agents` | List configured agents |
-| `convai watch` | Monitor and auto-sync changes |
-
-your_project/
-├── agents.json # Central agent configuration
-├── agent_configs/ # Individual agent configs
-├── convai.lock # State tracking
-└── tests/ # Test files (optional)
-
-
-## Templates
 
 Available templates:
 - **default**: Complete configuration with all fields
@@ -315,41 +170,91 @@ Available templates:
 - **customer-service**: Customer support scenarios
 - **assistant**: General AI assistant
 
+### 4. Sync Changes
+
 ```bash
-# List templates
-convai templates-list
+# Sync all agents in all environments
+convai sync
 
-# View template
-convai template-show customer-service
+# Sync specific agent
+convai sync --agent "Support Bot"
 
-# Use template
-convai add "Agent Name" --template minimal
+# Sync specific environment
+convai sync --env production
+
+# Dry run to preview changes
+convai sync --dry-run
+
+# Sync specific agent in specific environment
+convai sync --agent "Support Bot" --env production
 ```
 
-## Core Commands
+### 5. Check Status
 
-### Project Management
 ```bash
-convai init                              # Initialize project
-convai add "Agent Name"                  # Create new agent
-convai add "Agent" --template voice-only # Create with template
-convai fetch                             # Import existing agents
+# Show status for all agents and environments
+convai status
+
+# Show status for specific agent
+convai status --agent "Support Bot"
+
+# Show status for specific environment
+convai status --env production
+
+# Show status for specific agent in specific environment
+convai status --agent "Support Bot" --env production
 ```
 
-### Configuration
+### 6. Watch Mode
+
 ```bash
-convai validate config.json             # Validate config
-convai sync                              # Sync all agents
-convai sync --dry-run                    # Preview changes
-convai sync --env production             # Environment-specific
+# Watch all agents in prod environment
+convai watch
+
+# Watch specific agent
+convai watch --agent "Support Bot"
+
+# Watch specific environment
+convai watch --env development
+
+# Custom check interval
+convai watch --interval 10
 ```
 
-### Monitoring
+### 7. Import Existing Agents
+
 ```bash
-convai status                            # Show agent status (default env)
-convai status --env production           # Show status for specific environment
-convai list-agents                       # List all agents
-convai watch                             # Auto-sync on changes
+# Fetch all agents from ElevenLabs
+convai fetch
+
+# Fetch agents matching search term
+convai fetch --search "support"
+
+# Fetch to specific environment
+convai fetch --env staging
+
+# Dry run to see what would be imported
+convai fetch --dry-run
+
+# Custom output directory
+convai fetch --output-dir "imported_configs"
+```
+
+### 8. View Widget Code
+
+```bash
+# View widget snippet for agent in prod environment
+convai widget "Support Bot"
+
+# Generate widget for specific environment
+convai widget "Support Bot" --env development
+```
+
+### 9. List Agents
+
+```bash
+# List all configured agents
+convai list-agents
 ```
 
 ## Agent Configuration
@@ -376,98 +281,206 @@ convai watch                             # Auto-sync on changes
 }
 ```
 
-### Complete Configuration
-The CLI supports the full ElevenLabs schema including:
-- **ASR Configuration**: Quality, provider, audio format
-- **TTS Configuration**: Model, voice, streaming settings
-- **Agent Settings**: Prompts, LLM, tools, knowledge base
-- **Platform Settings**: Widget, privacy, call limits
-- **Safety Controls**: Content filtering, evaluation
-
 ## Common Workflows
 
-### New Project
+### New Project Setup
 ```bash
 convai init
 convai add "My Agent" --template assistant
-# Edit agent_configs/my_agent.json
+# Edit agent_configs/prod/my_agent.json
 convai sync
 ```
 
-### Import Existing
+### Multi-Environment Development
 ```bash
-convai init
-convai fetch
-convai status
-convai sync
-```
+# Create agents for different environments
+convai add "Support Bot" --env development --template customer-service
+convai add "Support Bot" --env production --template customer-service
 
-### Multi-Environment
-```bash
-convai add "[dev] Bot" --template customer-service
-convai add "[prod] Bot" --template customer-service
 # Edit configs for each environment
+# agent_configs/development/support_bot.json - relaxed settings
+# agent_configs/production/support_bot.json - production settings
+
+# Sync environments separately
 convai sync --env development
 convai sync --env production
 
-# Check status for each environment
+# Check status per environment
 convai status --env development
 convai status --env production
 ```
 
-### Continuous Development
+### Import and Sync Existing Agents
 ```bash
-convai watch &
-# Edit configs in another terminal - changes auto-sync
+convai init
+convai fetch --env production
+convai status
+# Edit configs as needed
+convai sync
 ```
 
-## Central Configuration (agents.json)
+### Continuous Development Workflow
+```bash
+# Start watching for changes (runs in background)
+convai watch --env development --interval 5
+
+# In another terminal, edit your agent configs
+# Changes will automatically sync to ElevenLabs!
+
+# Check status anytime
+convai status --env development
+```
+
+## Environment-Specific Configuration
+
+### Lock File Structure
+The `convai.lock` file stores agent IDs and configuration hashes per environment:
 
 ```json
 {
-    "agents": [
-        {
-            "name": "Production Support Agent",
-            "id": "agent-id-from-elevenlabs",
-            "config": "agent_configs/support_agent.json",
-            "test_cases": "tests/test_support.py"
+    "agents": {
+        "Support Bot": {
+            "production": {
+                "id": "agent-id-1",
+                "hash": "config-hash-1"
+            },
+            "development": {
+                "id": "agent-id-2", 
+                "hash": "config-hash-2"
+            }
         }
-    ]
+    }
 }
 ```
 
-## Troubleshooting
+### Environment Tags
+When creating or updating agents, the CLI automatically adds environment tags to help organize your agents in the ElevenLabs dashboard.
 
-**Common Issues:**
-1. **API Key**: Ensure `ELEVENLABS_API_KEY` is set
-2. **Validation**: Use `convai validate` for config errors
-3. **Sync Issues**: Check IDs in `convai.lock`
-4. **Templates**: Use `convai templates-list` for available options
+## Widget Integration
 
-**Get Help:**
+Generate HTML widget code for your agents:
+
 ```bash
-convai --help
-convai <command> --help
-convai status
+convai widget "Support Bot"
+```
+
+Output:
+```html
+<elevenlabs-convai agent-id="your-agent-id"></elevenlabs-convai>
+<script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
 ```
 
 ## Command Reference
 
-| Command | Description |
-|---------|-------------|
-| `convai init` | Initialize project |
-| `convai add <name>` | Create new agent |
-| `convai templates-list` | List available templates |
-| `convai template-show <template>` | Show template configuration |
-| `convai fetch` | Import agents from ElevenLabs |
-| `convai validate <config>` | Validate configuration |
-| `convai sync` | Synchronize agents |
-| `convai status` | Show agent status (supports --env) |
-| `convai list-agents` | List configured agents |
-| `convai watch` | Monitor and auto-sync changes |
+| Command | Description | Options |
+|---------|-------------|---------|
+| `convai init [path]` | Initialize project | Optional path (default: current directory) |
+| `convai add <name>` | Create new agent | `--template`, `--env`, `--skip-upload`, `--config-path` |
+| `convai templates-list` | List available templates | None |
+| `convai template-show <template>` | Show template config | `--agent-name` |
+| `convai sync` | Synchronize agents | `--agent`, `--env`, `--dry-run` |
+| `convai status` | Show agent status | `--agent`, `--env` |
+| `convai watch` | Monitor and auto-sync | `--agent`, `--env`, `--interval` |
+| `convai fetch` | Import agents from ElevenLabs | `--agent`, `--search`, `--env`, `--output-dir`, `--dry-run` |
+| `convai list-agents` | List configured agents | None |
+| `convai widget <name>` | Generate widget HTML | `--env` |
+
+## Troubleshooting
+
+### Common Issues
+
+**API Key Not Found**
+```bash
+export ELEVENLABS_API_KEY="your_api_key_here"
+# Or add to your .env file
+echo "ELEVENLABS_API_KEY=your_api_key_here" >> .env
+```
+
+**Agent Not Found Error**
+- Check if agent exists: `convai list-agents`
+- Verify environment: `convai status --env <environment>`
+- Check agents.json format
+
+**Sync Issues**
+- Verify config file exists and is valid JSON
+- Check lock file: `cat convai.lock`
+- Use dry-run to preview: `convai sync --dry-run`
+
+**Template Not Found**
+- List available templates: `convai templates-list`
+- Check spelling of template name
+
+**Config File Errors**
+- Validate JSON syntax
+- Check required fields (name, conversation_config)
+- Refer to template examples: `convai template-show <template>`
+
+### Debug Commands
+
+```bash
+# Check overall status
+convai status
+
+# Check specific environment
+convai status --env development
+
+# Preview sync changes
+convai sync --dry-run
+
+# Get help for any command
+convai <command> --help
+```
+
+### Reset and Clean Start
+
+```bash
+# Remove lock file to reset agent IDs
+rm convai.lock
+
+# Re-initialize
+convai init
+
+# Re-sync all agents
+convai sync
+```
+
+## Best Practices
+
+1. **Environment Separation**: Use different environments for development, staging, and production
+2. **Descriptive Names**: Use clear, descriptive names for agents
+3. **Version Control**: Commit `agents.json` and config files, exclude `convai.lock`
+4. **Template Usage**: Start with templates and customize as needed  
+5. **Regular Syncing**: Use watch mode during development
+6. **Testing**: Test agents in development before promoting to production
 
 ## Development
 
+### Running Tests
 ```bash
 poetry run pytest
 ```
+
+### Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+### Project Structure
+```
+elevenlabs_cli_tool/
+├── main.py              # Main CLI application
+├── utils.py             # Utility functions
+├── elevenlabsapi.py     # ElevenLabs API client
+├── templates.py         # Agent templates
+└── __init__.py
+```
+
+## Support
+
+For issues, questions, or feature requests:
+1. Check the troubleshooting section above
+2. Use `convai --help` or `convai <command> --help`
+3. Check existing GitHub issues
+4. Create a new issue with details about your problem
