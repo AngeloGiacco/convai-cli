@@ -15,7 +15,7 @@ A powerful CLI tool to manage ElevenLabs Conversational AI agents using local co
 ## Installation
 
 ```bash
-git clone <repository_url>
+git clone https://github.com/angelogiacco/convai-cli
 cd elevenlabs_cli
 poetry install
 poetry shell  # optional
