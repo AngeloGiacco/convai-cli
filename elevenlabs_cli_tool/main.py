@@ -5,14 +5,18 @@ import sys
 import json
 import typing
 from pathlib import Path
+from dotenv import load_dotenv
 
 import typer
 from elevenlabs import ElevenLabs, ConversationalConfig
 from elevenlabs.types import AgentPlatformSettingsRequestModel
 from elevenlabs.client import OMIT
 
+load_dotenv()
+
 from . import utils
 from . import elevenlabsapi
+from . import templates
 
 app = typer.Typer(help="ElevenLabs Conversational AI Agent Manager CLI")
 
@@ -53,7 +57,9 @@ def init(
 @app.command()
 def add(
     name: str = typer.Argument(help="Name of the agent to create"),
-    config_path: str = typer.Option(None, help="Custom config path (optional)")
+    config_path: str = typer.Option(None, help="Custom config path (optional)"),
+    template: str = typer.Option("default", help="Template type to use (default, minimal, voice-only, text-only, customer-service, assistant)"),
+    skip_upload: bool = typer.Option(False, "--skip-upload", help="Create config file only, don't upload to ElevenLabs")
 ):
     """Add a new agent - creates config, uploads to ElevenLabs, and saves ID."""
     
@@ -81,21 +87,32 @@ def add(
     config_file_path = Path(config_path)
     config_file_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Create default agent config
-    default_agent_config = {
-        "name": name,
-        "conversation_config": {
-            "model_id": "eleven_turbo_v2",
-            "prompt_template": f"You are {name}, a helpful AI assistant.",
-            "max_tokens": 200,
-            "temperature": 0.7
-        },
-        "platform_settings": {},
-        "tags": []
-    }
+    # Create agent config using template
+    try:
+        agent_config = templates.get_template_by_name(name, template)
+    except ValueError as e:
+        typer.echo(f"❌ {e}", err=True)
+        raise typer.Exit(1)
     
-    utils.write_agent_config(str(config_file_path), default_agent_config)
-    typer.echo(f"📝 Created config file: {config_path}")
+    utils.write_agent_config(str(config_file_path), agent_config)
+    typer.echo(f"📝 Created config file: {config_path} (template: {template})")
+    
+    if skip_upload:
+        # Create new agent entry without ID
+        new_agent = {
+            "name": name,
+            "config": config_path
+        }
+        
+        # Add new agent to config
+        agents_config["agents"].append(new_agent)
+        
+        # Save updated agents.json
+        utils.write_agent_config(str(agents_config_path), agents_config)
+        
+        typer.echo(f"✅ Added agent '{name}' to agents.json (local only)")
+        typer.echo(f"💡 Edit {config_path} to customize your agent, then run 'convai sync' to upload")
+        return
     
     # Create agent in ElevenLabs
     typer.echo(f"🚀 Creating agent '{name}' in ElevenLabs...")
@@ -104,9 +121,9 @@ def add(
         client = elevenlabsapi.get_elevenlabs_client()
         
         # Extract config components
-        conversation_config = default_agent_config.get("conversation_config", {})
-        platform_settings = default_agent_config.get("platform_settings")
-        tags = default_agent_config.get("tags", [])
+        conversation_config = agent_config.get("conversation_config", {})
+        platform_settings = agent_config.get("platform_settings")
+        tags = agent_config.get("tags", [])
         
         # Create new agent
         agent_id = elevenlabsapi.create_agent_api(
@@ -135,7 +152,7 @@ def add(
         # Update lock file
         lock_file_path = Path(LOCK_FILE)
         lock_data = utils.load_lock_file(str(lock_file_path))
-        config_hash = utils.calculate_config_hash(default_agent_config)
+        config_hash = utils.calculate_config_hash(agent_config)
         utils.update_agent_in_lock(lock_data, name, "default", agent_id, config_hash)
         utils.save_lock_file(str(lock_file_path), lock_data)
         
@@ -147,6 +164,37 @@ def add(
         # Clean up config file if agent creation failed
         if config_file_path.exists():
             config_file_path.unlink()
+        raise typer.Exit(1)
+
+
+@app.command()
+def templates_list():
+    """List available agent templates."""
+    template_options = templates.get_template_options()
+    
+    typer.echo("Available Agent Templates:")
+    typer.echo("=" * 40)
+    
+    for template_name, description in template_options.items():
+        typer.echo(f"\n🎯 {template_name}")
+        typer.echo(f"   {description}")
+    
+    typer.echo(f"\n💡 Use 'convai add <name> --template <template_name>' to create an agent with a specific template")
+
+
+@app.command()
+def template_show(
+    template_name: str = typer.Argument(help="Template name to show"),
+    agent_name: str = typer.Option("example_agent", help="Agent name to use in template")
+):
+    """Show the configuration for a specific template."""
+    try:
+        template_config = templates.get_template_by_name(agent_name, template_name)
+        typer.echo(f"Template: {template_name}")
+        typer.echo("=" * 40)
+        typer.echo(json.dumps(template_config, indent=2))
+    except ValueError as e:
+        typer.echo(f"❌ {e}", err=True)
         raise typer.Exit(1)
 
 
@@ -518,6 +566,196 @@ def list_agents():
         if "id" in agent_def:
             typer.echo(f"   ID: {agent_def['id']}")
         typer.echo()
+
+
+@app.command()
+def fetch(
+    output_dir: str = typer.Option("agent_configs", "--output-dir", help="Directory to store fetched agent configs"),
+    search: str = typer.Option(None, "--search", help="Search agents by name"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be fetched without making changes")
+):
+    """Fetch all agents from ElevenLabs workspace and add them to local configuration."""
+    
+    # Check if agents.json exists
+    agents_config_path = Path(AGENTS_CONFIG_FILE)
+    if not agents_config_path.exists():
+        typer.echo("❌ agents.json not found. Run 'convai init' first.", err=True)
+        raise typer.Exit(1)
+    
+    try:
+        # Initialize ElevenLabs client
+        client = elevenlabsapi.get_elevenlabs_client()
+        
+        # Fetch all agents from ElevenLabs
+        typer.echo("🔍 Fetching agents from ElevenLabs...")
+        agents_list = elevenlabsapi.list_agents_api(client, search=search)
+        
+        if not agents_list:
+            typer.echo("No agents found in your ElevenLabs workspace.")
+            return
+        
+        typer.echo(f"Found {len(agents_list)} agent(s)")
+        
+        # Load existing config
+        agents_config = utils.read_agent_config(str(agents_config_path))
+        existing_agent_names = {agent["name"] for agent in agents_config["agents"]}
+        existing_agent_ids = {agent.get("id") for agent in agents_config["agents"]}
+        
+        # Load lock file
+        lock_file_path = Path(LOCK_FILE)
+        lock_data = utils.load_lock_file(str(lock_file_path))
+        
+        new_agents_added = 0
+        updated_agents = 0
+        
+        for agent_meta in agents_list:
+            agent_id = agent_meta["agent_id"]
+            agent_name = agent_meta["name"]
+            
+            # Skip if agent already exists by ID
+            if agent_id in existing_agent_ids:
+                typer.echo(f"⏭️  Skipping '{agent_name}' - already exists (ID: {agent_id})")
+                continue
+            
+            # Check for name conflicts
+            if agent_name in existing_agent_names:
+                # Generate a unique name
+                counter = 1
+                original_name = agent_name
+                while agent_name in existing_agent_names:
+                    agent_name = f"{original_name}_{counter}"
+                    counter += 1
+                typer.echo(f"⚠️  Name conflict: renamed '{original_name}' to '{agent_name}'")
+            
+            if dry_run:
+                typer.echo(f"[DRY RUN] Would fetch agent: {agent_name} (ID: {agent_id})")
+                continue
+            
+            try:
+                # Fetch detailed agent configuration
+                typer.echo(f"📥 Fetching config for '{agent_name}'...")
+                agent_details = elevenlabsapi.get_agent_api(client, agent_id)
+                
+                # Extract configuration components
+                conversation_config = agent_details.get("conversation_config", {})
+                platform_settings = agent_details.get("platform_settings", {})
+                tags = agent_details.get("tags", [])
+                
+                # Create agent config structure
+                agent_config = {
+                    "name": agent_name,
+                    "conversation_config": conversation_config,
+                    "platform_settings": platform_settings,
+                    "tags": tags
+                }
+                
+                # Generate config file path
+                safe_name = agent_name.lower().replace(" ", "_").replace("[", "").replace("]", "")
+                config_path = f"{output_dir}/{safe_name}.json"
+                
+                # Create config file
+                config_file_path = Path(config_path)
+                config_file_path.parent.mkdir(parents=True, exist_ok=True)
+                utils.write_agent_config(str(config_file_path), agent_config)
+                
+                # Create new agent entry for agents.json
+                new_agent = {
+                    "name": agent_name,
+                    "id": agent_id,
+                    "config": config_path
+                }
+                
+                # Add to agents config
+                agents_config["agents"].append(new_agent)
+                existing_agent_names.add(agent_name)
+                existing_agent_ids.add(agent_id)
+                
+                # Update lock file
+                config_hash = utils.calculate_config_hash(agent_config)
+                utils.update_agent_in_lock(lock_data, agent_name, "default", agent_id, config_hash)
+                
+                typer.echo(f"✅ Added '{agent_name}' (config: {config_path})")
+                new_agents_added += 1
+                
+            except Exception as e:
+                typer.echo(f"❌ Error fetching agent '{agent_name}': {e}")
+                continue
+        
+        if not dry_run and new_agents_added > 0:
+            # Save updated agents.json
+            utils.write_agent_config(str(agents_config_path), agents_config)
+            
+            # Save updated lock file
+            utils.save_lock_file(str(lock_file_path), lock_data)
+            
+            typer.echo(f"💾 Updated {AGENTS_CONFIG_FILE} and {LOCK_FILE}")
+        
+        if dry_run:
+            typer.echo(f"[DRY RUN] Would add {len([a for a in agents_list if a['agent_id'] not in existing_agent_ids])} new agent(s)")
+        else:
+            typer.echo(f"✅ Successfully added {new_agents_added} new agent(s)")
+            if new_agents_added > 0:
+                typer.echo(f"💡 You can now edit the config files in '{output_dir}/' and run 'convai sync' to update")
+        
+    except ValueError as e:
+        typer.echo(f"❌ {e}", err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"❌ Error fetching agents: {e}", err=True)
+        raise typer.Exit(1)
+
+
+@app.command()
+def validate(
+    config_path: str = typer.Argument(help="Path to the agent config file to validate")
+):
+    """Validate an agent configuration file."""
+    config_file_path = Path(config_path)
+    
+    if not config_file_path.exists():
+        typer.echo(f"❌ Config file not found: {config_path}", err=True)
+        raise typer.Exit(1)
+    
+    try:
+        agent_config = utils.read_agent_config(str(config_file_path))
+        typer.echo(f"✅ Config file is valid JSON: {config_path}")
+        
+        # Basic validation checks
+        required_fields = ["name", "conversation_config"]
+        missing_fields = []
+        
+        for field in required_fields:
+            if field not in agent_config:
+                missing_fields.append(field)
+        
+        if missing_fields:
+            typer.echo(f"⚠️  Missing required fields: {', '.join(missing_fields)}")
+        else:
+            typer.echo("✅ All required fields present")
+        
+        # Check conversation_config structure
+        conv_config = agent_config.get("conversation_config", {})
+        if "agent" in conv_config and "prompt" in conv_config["agent"]:
+            prompt_config = conv_config["agent"]["prompt"]
+            if "prompt" in prompt_config and prompt_config["prompt"]:
+                typer.echo("✅ Agent prompt is configured")
+            else:
+                typer.echo("⚠️  Agent prompt is empty or missing")
+        
+        # Check for common issues
+        if "platform_settings" in agent_config:
+            platform = agent_config["platform_settings"]
+            if platform.get("call_limits", {}).get("daily_limit", 0) <= 0:
+                typer.echo("⚠️  Daily call limit is 0 or negative")
+        
+        typer.echo(f"📊 Config file size: {len(json.dumps(agent_config))} characters")
+        
+    except json.JSONDecodeError as e:
+        typer.echo(f"❌ Invalid JSON in config file: {e}", err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"❌ Error validating config: {e}", err=True)
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

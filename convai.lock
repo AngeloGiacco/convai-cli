@@ -1,0 +1,14 @@
+{
+    "agents": {
+        "example_agent": {
+            "default": {
+                "id": "agent_01jxqvmhakfcv92c0e3x9byamy",
+                "hash": "38dd7d9025202f22d2c584fe0d72d46e"
+            },
+            "development": {
+                "id": "agent_01jxqvmhakfcv92c0e3x9byamy",
+                "hash": "e632093121435a673e09e48dd382cc7e"
+            }
+        }
+    }
+}

@@ -99,18 +99,11 @@ def test_create_agent_api_with_all_params(mock_elevenlabs_client):
 # --- Tests for update_agent_api ---
 @pytest.fixture
 def mock_update_response():
-    # Helper to create a valid-looking GetAgentResponseModel for update calls
-    # These fields are just examples, ensure they match SDK requirements if code uses them
-    mock_conv_config = MagicMock(spec=ConversationalConfig)
-    mock_plat_settings = MagicMock(spec=AgentPlatformSettingsRequestModel)
-    return GetAgentResponseModel(
-        agent_id="updated_agent_id", 
-        name="Updated Agent Name", 
-        conversation_config=mock_conv_config, 
-        tools=[], 
-        platform_settings=mock_plat_settings, 
-        tags=[]
-    )
+    # Just return a mock instead of trying to construct the pydantic model
+    mock_response = MagicMock()
+    mock_response.agent_id = "updated_agent_id"
+    mock_response.name = "Updated Agent Name"
+    return mock_response
 
 def test_update_agent_api_only_name(mock_elevenlabs_client, mock_update_response):
     mock_elevenlabs_client.conversational_ai.agents.update.return_value = mock_update_response

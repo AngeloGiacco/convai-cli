@@ -104,3 +104,55 @@ def update_agent_api(
         tags=tags_arg
     )
     return response.agent_id
+
+def list_agents_api(
+    client: ElevenLabs,
+    page_size: int = 30,
+    search: typing.Optional[str] = None
+) -> typing.List[dict]:
+    """
+    Lists all agents from the ElevenLabs API.
+
+    Args:
+        client: An initialized ElevenLabs client.
+        page_size: Maximum number of agents to return per page (default: 30, max: 100).
+        search: Optional search string to filter agents by name.
+
+    Returns:
+        A list of agent metadata dictionaries.
+    """
+    all_agents = []
+    cursor = None
+    
+    while True:
+        # Build request parameters
+        kwargs = {"page_size": min(page_size, 100)}
+        if cursor:
+            kwargs["cursor"] = cursor
+        if search:
+            kwargs["search"] = search
+            
+        response = client.conversational_ai.agents.list(**kwargs)
+        
+        all_agents.extend(response.agents)
+        
+        if not response.has_more:
+            break
+            
+        cursor = response.next_cursor
+    
+    return [agent.dict() for agent in all_agents]
+
+def get_agent_api(client: ElevenLabs, agent_id: str) -> dict:
+    """
+    Gets detailed configuration for a specific agent from the ElevenLabs API.
+
+    Args:
+        client: An initialized ElevenLabs client.
+        agent_id: The ID of the agent to retrieve.
+
+    Returns:
+        A dictionary containing the full agent configuration.
+    """
+    response = client.conversational_ai.agents.get(agent_id=agent_id)
+    return response.dict()

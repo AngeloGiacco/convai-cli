@@ -1,51 +1,52 @@
 # ElevenLabs Conversational AI Agent Manager CLI
 
-A powerful command-line interface (CLI) tool to manage your ElevenLabs Conversational AI agents using local configuration files. This tool enables testing and creation of agents across different environments with continuous updates via CLI. It only updates agents in ElevenLabs when their configuration hash changes, making it efficient for development and production workflows.
+A powerful CLI tool to manage ElevenLabs Conversational AI agents using local configuration files. Features hash-based change detection, templates, multi-environment support, and continuous syncing.
 
 ## Features
 
-*   **Agent Configuration Management**: Define agents in a centralized `agents.json` file with support for different environments
-*   **Hash-based Change Detection**: Only sync agents when their configuration actually changes
-*   **Continuous Monitoring**: Watch mode automatically syncs agents when config files change
-*   **Multi-environment Support**: Deploy the same agent across dev, staging, and production environments
-*   **Integrated Testing**: Run tests for your agents with built-in test management
-*   **Lock File System**: Track agent states and prevent unnecessary API calls
-*   **Flexible Agent Structure**: Support custom config paths and test files per agent
-
-## Prerequisites
-
-*   Python 3.8+
-*   An ElevenLabs account and API Key.
+- **Complete Agent Configuration**: Full ElevenLabs agent schema support (ASR, TTS, platform settings, etc.)
+- **Template System**: Pre-built templates for common use cases
+- **Multi-environment Support**: Deploy across dev, staging, production
+- **Hash-based Updates**: Only sync when configuration actually changes
+- **Continuous Monitoring**: Watch mode for automatic updates
+- **Agent Import**: Fetch existing agents from ElevenLabs workspace
+- **Configuration Validation**: Built-in config validation
 
 ## Installation
 
-This tool is built with Poetry.
-
-1.  **Clone the repository (if you haven't already):**
-    ```bash
-    git clone <repository_url>
-    cd elevenlabs_cli
-    ```
-
-2.  **Install dependencies using Poetry:**
-    ```bash
-    poetry install
-    ```
-
-3.  **Activate the virtual environment (optional, but recommended):**
-    ```bash
-    poetry shell
-    ```
-    Alternatively, you can run commands using `poetry run <command>`.
+```bash
+git clone <repository_url>
+cd elevenlabs_cli
+poetry install
+poetry shell  # optional
+```
 
 ## Configuration
 
-Set your ElevenLabs API key as an environment variable:
-
+Set your ElevenLabs API key:
 ```bash
 export ELEVENLABS_API_KEY="your_api_key_here"
 ```
-The CLI tool will use this key to authenticate with the ElevenLabs API.
+
+## Quick Start
+
+```bash
+# 1. Initialize project
+convai init
+
+# 2. Create agent with template
+convai add "Customer Support Bot" --template customer-service
+
+# 3. Edit configuration
+# agent_configs/customer_support_bot.json
+
+# 4. Validate and sync
+convai validate agent_configs/customer_support_bot.json
+convai sync
+
+# 5. Watch for changes (optional)
+convai watch
+```
 
 ## Directory Structure
 
@@ -268,6 +269,190 @@ convai sync
 ## Development
 
 (Optional: Add notes for developers if this project were to be contributed to, e.g., how to run tests)
+
+```bash
+poetry run pytest
+```
+
+## Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `convai init` | Initialize a new project |
+| `convai add <name>` | Create a new agent |
+| `convai templates-list` | List available templates |
+| `convai template-show <template>` | Show template configuration |
+| `convai fetch` | Import agents from ElevenLabs |
+| `convai validate <config>` | Validate configuration file |
+| `convai sync` | Synchronize agents with ElevenLabs |
+| `convai status` | Show agent status |
+| `convai list-agents` | List configured agents |
+| `convai watch` | Monitor and auto-sync changes |
+
+your_project/
+├── agents.json # Central agent configuration
+├── agent_configs/ # Individual agent configs
+├── convai.lock # State tracking
+└── tests/ # Test files (optional)
+
+
+## Templates
+
+Available templates:
+- **default**: Complete configuration with all fields
+- **minimal**: Essential fields only
+- **voice-only**: Voice conversation optimized
+- **text-only**: Text conversation optimized
+- **customer-service**: Customer support scenarios
+- **assistant**: General AI assistant
+
+```bash
+# List templates
+convai templates-list
+
+# View template
+convai template-show customer-service
+
+# Use template
+convai add "Agent Name" --template minimal
+```
+
+## Core Commands
+
+### Project Management
+```bash
+convai init                              # Initialize project
+convai add "Agent Name"                  # Create new agent
+convai add "Agent" --template voice-only # Create with template
+convai fetch                             # Import existing agents
+```
+
+### Configuration
+```bash
+convai validate config.json             # Validate config
+convai sync                              # Sync all agents
+convai sync --dry-run                    # Preview changes
+convai sync --env production             # Environment-specific
+```
+
+### Monitoring
+```bash
+convai status                            # Show agent status
+convai list-agents                       # List all agents
+convai watch                             # Auto-sync on changes
+```
+
+## Agent Configuration
+
+### Minimal Example
+```json
+{
+    "name": "Support Bot",
+    "conversation_config": {
+        "agent": {
+            "prompt": {
+                "prompt": "You are a helpful customer service representative.",
+                "llm": "gemini-2.0-flash",
+                "temperature": 0.1
+            },
+            "language": "en"
+        },
+        "tts": {
+            "model_id": "eleven_turbo_v2",
+            "voice_id": "cjVigY5qzO86Huf0OWal"
+        }
+    },
+    "tags": ["customer-service"]
+}
+```
+
+### Complete Configuration
+The CLI supports the full ElevenLabs schema including:
+- **ASR Configuration**: Quality, provider, audio format
+- **TTS Configuration**: Model, voice, streaming settings
+- **Agent Settings**: Prompts, LLM, tools, knowledge base
+- **Platform Settings**: Widget, privacy, call limits
+- **Safety Controls**: Content filtering, evaluation
+
+## Common Workflows
+
+### New Project
+```bash
+convai init
+convai add "My Agent" --template assistant
+# Edit agent_configs/my_agent.json
+convai sync
+```
+
+### Import Existing
+```bash
+convai init
+convai fetch
+convai status
+convai sync
+```
+
+### Multi-Environment
+```bash
+convai add "[dev] Bot" --template customer-service
+convai add "[prod] Bot" --template customer-service
+# Edit configs for each environment
+convai sync --env development
+convai sync --env production
+```
+
+### Continuous Development
+```bash
+convai watch &
+# Edit configs in another terminal - changes auto-sync
+```
+
+## Central Configuration (agents.json)
+
+```json
+{
+    "agents": [
+        {
+            "name": "Production Support Agent",
+            "id": "agent-id-from-elevenlabs",
+            "config": "agent_configs/support_agent.json",
+            "test_cases": "tests/test_support.py"
+        }
+    ]
+}
+```
+
+## Troubleshooting
+
+**Common Issues:**
+1. **API Key**: Ensure `ELEVENLABS_API_KEY` is set
+2. **Validation**: Use `convai validate` for config errors
+3. **Sync Issues**: Check IDs in `convai.lock`
+4. **Templates**: Use `convai templates-list` for available options
+
+**Get Help:**
+```bash
+convai --help
+convai <command> --help
+convai status
+```
+
+## Command Reference
+
+| Command | Description |
+|---------|-------------|
+| `convai init` | Initialize project |
+| `convai add <name>` | Create new agent |
+| `convai templates-list` | List available templates |
+| `convai template-show <template>` | Show template configuration |
+| `convai fetch` | Import agents from ElevenLabs |
+| `convai validate <config>` | Validate configuration |
+| `convai sync` | Synchronize agents |
+| `convai status` | Show agent status |
+| `convai list-agents` | List configured agents |
+| `convai watch` | Monitor and auto-sync changes |
+
+## Development
 
 ```bash
 poetry run pytest
