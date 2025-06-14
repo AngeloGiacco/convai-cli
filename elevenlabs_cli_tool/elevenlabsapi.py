@@ -41,7 +41,6 @@ def create_agent_api(
         The agent_id of the newly created agent.
     """
     conv_config = ConversationalConfig(**conversation_config_dict)
-
     plat_settings_arg = OMIT
     if platform_settings_dict is not None:
         plat_settings_arg = AgentPlatformSettingsRequestModel(**platform_settings_dict)

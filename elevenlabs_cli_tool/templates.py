@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-
-import typing
-
-
 def get_default_agent_template(name: str) -> dict:
     """
     Returns a complete default agent configuration template with all available fields.

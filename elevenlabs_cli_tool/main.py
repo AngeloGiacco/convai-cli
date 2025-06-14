@@ -1,14 +1,8 @@
-import os
-import sys
 import json
-import typing
 from pathlib import Path
 from dotenv import load_dotenv
 
 import typer
-from elevenlabs import ElevenLabs, ConversationalConfig
-from elevenlabs.types import AgentPlatformSettingsRequestModel
-from elevenlabs.client import OMIT
 
 load_dotenv()
 

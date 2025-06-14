@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "elevenlabs-cli-tool"
-version = "0.1.1"
+version = "0.1.4"
 description = "CLI tool to manage ElevenLabs conversational AI agents"
 authors = ["Angelo Giacco"]
 readme = "README.md"
@@ -25,7 +25,7 @@ packages = [{include = "elevenlabs_cli_tool"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-elevenlabs = "*"  # Replace with the actual version constraint if known, otherwise "*" is fine for now
+elevenlabs = "2.3.0"
 typer = {extras = ["all"], version = "^0.9.0"} # Using version 0.9.0 as an example, adjust if needed
 
 [tool.poetry.group.dev.dependencies]
