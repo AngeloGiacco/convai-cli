@@ -25,7 +25,7 @@ def init(
     project_path = Path(path).resolve()
     
     # Create agents directory
-    agents_dir = project_path / "agents"
+    agents_dir = project_path / "agent_configs"
     agents_dir.mkdir(exist_ok=True)
     
     # Create agents.json if it doesn't exist
