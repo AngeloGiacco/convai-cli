@@ -125,7 +125,7 @@ def list_agents_api(
     
     while True:
         # Build request parameters
-        kwargs = {"page_size": min(page_size, 100)}
+        kwargs: typing.Dict[str, typing.Any] = {"page_size": min(page_size, 100)}
         if cursor:
             kwargs["cursor"] = cursor
         if search:

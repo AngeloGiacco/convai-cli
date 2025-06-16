@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "elevenlabs-cli-tool"
-version = "0.1.6"
+name = "convai"
+version = "0.1.7"
 description = "CLI tool to manage ElevenLabs conversational AI agents"
 authors = ["Angelo Giacco"]
 readme = "README.md"
