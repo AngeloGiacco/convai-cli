@@ -2,6 +2,22 @@
 
 A powerful CLI tool to manage ElevenLabs Conversational AI agents using local configuration files. Features hash-based change detection, templates, multi-environment support, and continuous syncing.
 
+## Installation
+
+### Install from PyPI
+```bash
+pip install convai
+poetry add convai
+```
+
+### Install from Homebrew
+```bash
+brew tap angelogiacco/convai
+brew install convai
+```
+
+After installation, you can use the `convai` command from anywhere.
+
 ## Features
 
 - **Complete Agent Configuration**: Full ElevenLabs agent schema support (ASR, TTS, platform settings, etc.)
@@ -11,15 +27,6 @@ A powerful CLI tool to manage ElevenLabs Conversational AI agents using local co
 - **Continuous Monitoring**: Watch mode for automatic updates
 - **Agent Import**: Fetch existing agents from ElevenLabs workspace
 - **Widget**: View HTML widget snippets for agents
-
-## Installation
-
-```bash
-git clone https://github.com/angelogiacco/convai-cli
-cd elevenlabs_cli
-poetry install
-poetry shell  # optional
-```
 
 ## Configuration
 
